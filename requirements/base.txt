@@ -6,3 +6,5 @@ django-import-export>=3.3
 qrcode[pil]>=7.4
 python-decouple>=3.8
 whitenoise>=6.6
+pandas>=2.0
+openpyxl>=3.1
