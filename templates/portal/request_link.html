@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Student Portal{% endblock %}
+
+{% block content %}
+<h1>Student Portal</h1>
+<p class="subtitle">Enter your student ID to receive a login link</p>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{% url 'portal:request_link_submit' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="student_id">Student ID</label>
+        <input type="text" id="student_id" name="student_id" placeholder="e.g. 2021001" required autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary">Send Login Link</button>
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Attendance Recorded{% endblock %}
+
+{% block content %}
+<div class="status-icon success">&#10003;</div>
+<h1>Attendance Recorded</h1>
+<p class="subtitle">
+    {{ course.code }} — {{ course.name }}
+</p>
+<p>
+    <strong>{{ student_id }}</strong>
+    {% if student_name %} — {{ student_name }}{% endif %}
+</p>
+<div class="schedule-info">
+    You're all set. You can close this page.
+</div>
+{% endblock %}

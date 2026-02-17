@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Attendance — {{ course.code }}{% endblock %}
+{% block content %}
+<h2>Attendance Matrix: {{ course.code }} — {{ course.name }}</h2>
+<p>
+    <a href="?export=csv" class="button">Export CSV</a>
+</p>
+<div style="overflow-x: auto;">
+<table style="border-collapse: collapse; width: 100%; font-size: 0.85rem;">
+    <thead>
+        <tr style="background: #f0f0f0;">
+            <th style="padding: 6px 10px; text-align: left; border: 1px solid #ddd;">Student ID</th>
+            <th style="padding: 6px 10px; text-align: left; border: 1px solid #ddd;">Name</th>
+            {% for session in sessions %}
+            <th style="padding: 6px 10px; text-align: center; border: 1px solid #ddd; writing-mode: vertical-lr; min-width: 30px;">
+                W{{ session.week_number }}<br>{{ session.date|date:"m/d" }}
+            </th>
+            {% endfor %}
+            <th style="padding: 6px 10px; text-align: center; border: 1px solid #ddd;">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td style="padding: 4px 10px; border: 1px solid #ddd;">{{ row.student.student_id }}</td>
+            <td style="padding: 4px 10px; border: 1px solid #ddd;">{{ row.student.name }}</td>
+            {% for present in row.attendance %}
+            <td style="padding: 4px; text-align: center; border: 1px solid #ddd; background: {% if present %}#d4edda{% else %}#f8d7da{% endif %};">
+                {% if present %}P{% else %}A{% endif %}
+            </td>
+            {% endfor %}
+            <td style="padding: 4px 10px; text-align: center; border: 1px solid #ddd; font-weight: bold;">{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

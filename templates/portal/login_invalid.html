@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Link Invalid{% endblock %}
+
+{% block content %}
+<div class="status-icon error">&#10007;</div>
+<h1>Link Invalid or Expired</h1>
+<p class="subtitle">This login link is no longer valid. Links expire after 15 minutes.</p>
+<a href="{% url 'portal:request_link' %}" class="btn btn-primary" style="margin-top: 1rem; text-decoration: none;">Request a New Link</a>
+{% endblock %}

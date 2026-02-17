@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Register Email{% endblock %}
+
+{% block content %}
+<h1>Register Email</h1>
+<p class="subtitle">Student {{ student_id }} — enter your email to receive login links</p>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{% url 'portal:register_submit' %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="your.email@university.edu" required autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary">Save &amp; Send Login Link</button>
+</form>
+{% endblock %}

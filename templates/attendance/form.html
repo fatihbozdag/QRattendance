@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ course.code }} — Attendance{% endblock %}
+
+{% block content %}
+<h1>{{ course.code }}</h1>
+<p class="subtitle">{{ course.name }}</p>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{% url 'attendance:submit_attendance' course.qr_token %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="student_id">Student ID</label>
+        <input type="text" id="student_id" name="student_id"
+               placeholder="Enter your student ID"
+               autocomplete="off" autofocus required
+               inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Attendance</button>
+</form>
+
+<div class="schedule-info">
+    Week {{ session.week_number }} — {{ session.date }}
+</div>
+{% endblock %}

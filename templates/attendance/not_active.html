@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Class Not Active{% endblock %}
+
+{% block content %}
+<div class="status-icon info">&#128340;</div>
+<h1>Class Not Active</h1>
+<p class="subtitle">{{ course.code }} — {{ course.name }}</p>
+<p>This class is not currently in session.</p>
+
+{% if next_schedule %}
+<div class="schedule-info">
+    <strong>Next class:</strong><br>
+    {{ next_schedule.get_day_of_week_display }}
+    {{ next_schedule.start_time|time:"H:i" }} – {{ next_schedule.end_time|time:"H:i" }}
+</div>
+{% endif %}
+{% endblock %}

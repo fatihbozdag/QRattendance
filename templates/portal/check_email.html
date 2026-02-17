@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Check Your Email{% endblock %}
+
+{% block content %}
+<div class="status-icon info">&#9993;</div>
+<h1>Check Your Email</h1>
+<p class="subtitle">We sent a login link to <strong>{{ masked_email }}</strong></p>
+<div class="schedule-info">
+    The link expires in 15 minutes. If you don't see it, check your spam folder.
+</div>
+{% endblock %}

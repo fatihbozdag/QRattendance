@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .dashboard-header h1 { margin-bottom: 0; }
+    .logout-link {
+        font-size: 0.85rem;
+        color: #666;
+        text-decoration: none;
+    }
+    .logout-link:hover { color: #e74c3c; }
+    .student-info {
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+        text-align: left;
+    }
+    .course-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        text-align: left;
+    }
+    .course-card .course-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+    }
+    .course-card .course-code {
+        color: #888;
+        font-size: 0.8rem;
+        margin-bottom: 0.6rem;
+    }
+    .progress-bar-bg {
+        background: #e0e0e0;
+        border-radius: 6px;
+        height: 10px;
+        overflow: hidden;
+        margin-bottom: 0.3rem;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.3s;
+    }
+    .progress-bar-fill.green { background: #2ecc71; }
+    .progress-bar-fill.yellow { background: #f1c40f; }
+    .progress-bar-fill.red { background: #e74c3c; }
+    .attendance-stats {
+        font-size: 0.8rem;
+        color: #666;
+        display: flex;
+        justify-content: space-between;
+    }
+    .no-courses {
+        color: #888;
+        padding: 2rem 0;
+    }
+</style>
+
+<div class="dashboard-header">
+    <h1>My Attendance</h1>
+    <a href="{% url 'portal:portal_logout' %}" class="logout-link">Logout</a>
+</div>
+
+<div class="student-info">
+    {{ student.name }} ({{ student.student_id }})
+</div>
+
+{% if courses %}
+    {% for course in courses %}
+    <div class="course-card">
+        <div class="course-name">{{ course.name }}</div>
+        <div class="course-code">{{ course.code }}</div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill {% if course.percentage >= 70 %}green{% elif course.percentage >= 50 %}yellow{% else %}red{% endif %}"
+                 style="width: {{ course.percentage }}%"></div>
+        </div>
+        <div class="attendance-stats">
+            <span>{{ course.attended }} / {{ course.total }} sessions</span>
+            <span>{{ course.percentage }}%</span>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <p class="no-courses">No course enrollments found.</p>
+{% endif %}
+{% endblock %}

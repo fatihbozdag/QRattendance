@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+
+{% block content %}
+<div class="status-icon error">&#10007;</div>
+<h1>Cannot Record Attendance</h1>
+<p class="subtitle">{{ course.code }} — {{ course.name }}</p>
+<p>{{ message }}</p>
+{% endblock %}

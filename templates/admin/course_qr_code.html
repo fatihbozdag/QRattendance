@@ -1,0 +1,78 @@
+{% extends "admin/base_site.html" %}
+{% block title %}QR Code — {{ course.code }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .qr-container {
+        text-align: center;
+        padding: 2rem;
+    }
+    .qr-container h2 {
+        margin-bottom: 0.25rem;
+    }
+    .qr-container .subtitle {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+    #qr-canvas {
+        margin: 1rem auto;
+        display: block;
+    }
+    .scan-url {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #888;
+        word-break: break-all;
+        margin-top: 1rem;
+    }
+    .print-instructions {
+        margin-top: 1.5rem;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    @media print {
+        #header, #branding, #user-tools, nav, .breadcrumbs,
+        #footer, .print-instructions, .print-btn { display: none !important; }
+        .qr-container { padding: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qr-container">
+    <h2>{{ course.code }} — {{ course.name }}</h2>
+    <p class="subtitle">{{ course.semester }}{% if course.course_hours %} | {{ course.course_hours }} hours/week{% endif %}</p>
+
+    <div id="qr-canvas"></div>
+
+    <p class="scan-url">{{ scan_url }}</p>
+
+    <p class="print-instructions">
+        Scan this QR code during class hours to record attendance.
+    </p>
+    <p>
+        <button class="button print-btn" onclick="window.print()">Print QR Code</button>
+    </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+(function() {
+    var qr = qrcode(0, 'M');
+    qr.addData('{{ scan_url }}');
+    qr.make();
+    document.getElementById('qr-canvas').innerHTML = qr.createSvgTag({
+        scalable: true,
+        cellSize: 8,
+        margin: 4
+    });
+    // Make the SVG reasonably sized
+    var svg = document.querySelector('#qr-canvas svg');
+    if (svg) {
+        svg.style.width = '280px';
+        svg.style.height = '280px';
+    }
+})();
+</script>
+{% endblock %}
