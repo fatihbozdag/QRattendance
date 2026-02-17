@@ -6,6 +6,17 @@ from django.utils.text import slugify
 from apps.core.models import TimeStampedModel
 
 
+class Holiday(TimeStampedModel):
+    date = models.DateField(unique=True)
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.date} — {self.name}"
+
+
 class Student(TimeStampedModel):
     student_id = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
@@ -24,6 +35,7 @@ class Course(TimeStampedModel):
     slug = models.SlugField(unique=True, blank=True)
     qr_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     semester = models.CharField(max_length=20, help_text="e.g. 2025-Spring")
+    lecturer = models.CharField(max_length=200, blank=True, help_text="e.g. Dr. Fatih Bozdag")
     course_hours = models.PositiveIntegerField(
         default=3, help_text="Weekly hours (e.g. 2, 3, 4)"
     )
@@ -48,6 +60,8 @@ class Course(TimeStampedModel):
 class Enrollment(TimeStampedModel):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="enrollments")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="enrollments")
+    midterm_grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    final_grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     class Meta:
         unique_together = ["student", "course"]
@@ -120,3 +134,37 @@ class AttendanceRecord(TimeStampedModel):
 
     def __str__(self):
         return f"{self.student_id_entered} @ {self.session}"
+
+
+class ExcusedAbsence(TimeStampedModel):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="excused_absences")
+    session = models.ForeignKey(ClassSession, on_delete=models.CASCADE, related_name="excused_absences")
+    reason = models.CharField(max_length=200, help_text='e.g. "Medical report", "Official leave"')
+
+    class Meta:
+        unique_together = ["student", "session"]
+        ordering = ["session__date"]
+
+    def __str__(self):
+        return f"{self.student.student_id} — {self.session} (Excused)"
+
+
+class CourseMaterial(TimeStampedModel):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="materials")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to="materials/", blank=True)
+    url = models.URLField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if not self.file and not self.url:
+            raise ValidationError("At least one of 'file' or 'url' must be provided.")

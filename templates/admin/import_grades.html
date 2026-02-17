@@ -1,0 +1,44 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Import Grades — {{ course.code }}{% endblock %}
+{% block content %}
+<h2>Import Grades: {{ course.code }} — {{ course.name }}</h2>
+
+{% if results %}
+<div style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 6px; background: #d4edda; border: 1px solid #c3e6cb;">
+    <strong>{{ results.updated }}</strong> enrollment(s) updated.
+    {% if results.skipped %}
+    <br><strong>Skipped</strong> (not enrolled): {{ results.skipped|join:", " }}
+    {% endif %}
+    {% if results.errors %}
+    <br><strong>Errors:</strong>
+    <ul style="margin: 0.3rem 0 0 1.2rem;">
+        {% for err in results.errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}
+
+<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 6px;">
+    <strong>CSV Format:</strong>
+    <pre style="margin: 0.5rem 0 0; font-size: 0.85rem;">student_id,midterm,final
+2021001,85.5,
+2021002,72,91</pre>
+    <p style="font-size: 0.85rem; color: #666; margin: 0.5rem 0 0;">
+        Empty values are skipped (existing grades are preserved). Headers required on first line.
+    </p>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>
+        <label for="csv_file"><strong>CSV File:</strong></label><br>
+        <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+    </p>
+    <p>
+        <input type="submit" value="Import Grades" class="button">
+        <a href="{% url 'admin:attendance_course_changelist' %}" style="margin-left: 1rem;">Cancel</a>
+    </p>
+</form>
+{% endblock %}

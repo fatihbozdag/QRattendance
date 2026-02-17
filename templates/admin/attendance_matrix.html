@@ -24,9 +24,9 @@
         <tr>
             <td style="padding: 4px 10px; border: 1px solid #ddd;">{{ row.student.student_id }}</td>
             <td style="padding: 4px 10px; border: 1px solid #ddd;">{{ row.student.name }}</td>
-            {% for present in row.attendance %}
-            <td style="padding: 4px; text-align: center; border: 1px solid #ddd; background: {% if present %}#d4edda{% else %}#f8d7da{% endif %};">
-                {% if present %}P{% else %}A{% endif %}
+            {% for status in row.attendance %}
+            <td style="padding: 4px; text-align: center; border: 1px solid #ddd; background: {% if status == 'P' %}#d4edda{% elif status == 'E' %}#d6eaf8{% else %}#f8d7da{% endif %};">
+                {{ status }}
             </td>
             {% endfor %}
             <td style="padding: 4px 10px; text-align: center; border: 1px solid #ddd; font-weight: bold;">{{ row.total }}</td>

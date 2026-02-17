@@ -14,7 +14,10 @@ from .models import (
     AttendanceRecord,
     ClassSession,
     Course,
+    CourseMaterial,
     Enrollment,
+    ExcusedAbsence,
+    Holiday,
     Schedule,
     Student,
 )
@@ -46,12 +49,35 @@ class AttendanceRecordResource(resources.ModelResource):
 
 class EnrollmentInline(admin.TabularInline):
     model = Enrollment
-    extra = 1
+    extra = 0
     autocomplete_fields = ["student"]
+    fields = ["student"]
+
+
+class CourseMaterialInline(admin.TabularInline):
+    model = CourseMaterial
+    extra = 0
+    fields = ["title", "description", "file", "url", "order"]
+
+
+class ScheduleForm(forms.ModelForm):
+    start_time = forms.TimeField(
+        widget=forms.TextInput(attrs={"placeholder": "HH:MM", "size": "5"}),
+        input_formats=["%H:%M"],
+    )
+    end_time = forms.TimeField(
+        widget=forms.TextInput(attrs={"placeholder": "HH:MM", "size": "5"}),
+        input_formats=["%H:%M"],
+    )
+
+    class Meta:
+        model = Schedule
+        fields = "__all__"
 
 
 class ScheduleInline(admin.TabularInline):
     model = Schedule
+    form = ScheduleForm
     extra = 1
 
 
@@ -63,6 +89,12 @@ class AttendanceRecordInline(admin.TabularInline):
 
     def has_add_permission(self, request, obj=None):
         return False
+
+
+class ExcusedAbsenceInline(admin.TabularInline):
+    model = ExcusedAbsence
+    extra = 0
+    autocomplete_fields = ["student"]
 
 
 # --- Admin classes ---
@@ -90,15 +122,16 @@ class CourseAdminForm(forms.ModelForm):
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     form = CourseAdminForm
-    list_display = ["code", "name", "semester", "course_hours", "qr_token", "total_weeks", "qr_code_link", "matrix_link"]
+    list_display = ["code", "name", "semester", "course_hours", "qr_token", "total_weeks", "qr_code_link", "matrix_link", "import_grades_link", "dashboard_link"]
     search_fields = ["code", "name"]
     list_filter = ["semester"]
     readonly_fields = ["qr_token", "slug"]
-    inlines = [ScheduleInline, EnrollmentInline]
+    inlines = [ScheduleInline, EnrollmentInline, CourseMaterialInline]
+    actions = ["export_attendance_matrix"]
 
     fieldsets = (
         ("Course Info", {
-            "fields": ("code", "name", "semester", "course_hours"),
+            "fields": ("code", "name", "semester", "lecturer", "course_hours"),
         }),
         ("Schedule Config", {
             "fields": ("semester_start_date", "total_weeks"),
@@ -123,6 +156,75 @@ class CourseAdmin(admin.ModelAdmin):
         url = reverse("attendance_matrix", args=[obj.pk])
         return format_html('<a href="{}">View Matrix</a>', url)
 
+    @admin.display(description="Grades")
+    def import_grades_link(self, obj):
+        url = reverse("import_grades", args=[obj.pk])
+        return format_html('<a href="{}">Import Grades</a>', url)
+
+    @admin.display(description="Dashboard")
+    def dashboard_link(self, obj):
+        url = reverse("instructor_dashboard", args=[obj.pk])
+        return format_html('<a href="{}">Dashboard</a>', url)
+
+    @admin.action(description="Export attendance matrix (CSV)")
+    def export_attendance_matrix(self, request, queryset):
+        if queryset.count() != 1:
+            messages.warning(request, "Please select exactly one course to export.")
+            return
+        course = queryset.first()
+
+        sessions = ClassSession.objects.filter(
+            course=course, is_cancelled=False
+        ).order_by("date", "start_time")
+        enrollments = Enrollment.objects.filter(course=course).select_related("student")
+
+        # Build set of (student_pk, session_pk) each student attended
+        attended = set(
+            AttendanceRecord.objects.filter(
+                session__course=course, session__is_cancelled=False, student__isnull=False
+            ).values_list("student_id", "session_id")
+        )
+
+        # Build set of (student_pk, session_pk) for excused absences
+        excused = set(
+            ExcusedAbsence.objects.filter(
+                session__course=course, session__is_cancelled=False
+            ).values_list("student_id", "session_id")
+        )
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f'attachment; filename="{course.code}_attendance.csv"'
+        writer = csv.writer(response)
+
+        # Header: Student ID, Name, date columns..., Total, %
+        header = ["Student ID", "Name"]
+        for s in sessions:
+            header.append(f"W{s.week_number} {s.date.strftime('%m/%d')}")
+        header += ["Attended", "Total", "Excused", "%"]
+        writer.writerow(header)
+
+        total_sessions = sessions.count()
+        for enrollment in enrollments:
+            student = enrollment.student
+            row = [student.student_id, student.name]
+            student_attended = 0
+            student_excused = 0
+            for s in sessions:
+                if (student.pk, s.pk) in excused:
+                    row.append("E")
+                    student_excused += 1
+                elif (student.pk, s.pk) in attended:
+                    row.append("P")
+                    student_attended += 1
+                else:
+                    row.append("A")
+            effective_total = total_sessions - student_excused
+            pct = round(student_attended / effective_total * 100) if effective_total > 0 else 0
+            row += [student_attended, total_sessions, student_excused, f"{pct}%"]
+            writer.writerow(row)
+
+        return response
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 
@@ -144,7 +246,9 @@ class CourseAdmin(admin.ModelAdmin):
         if obj.semester_start_date:
             schedules = obj.schedules.all()
             if schedules.exists():
+                holiday_dates = set(Holiday.objects.values_list("date", flat=True))
                 session_count = 0
+                skipped = 0
                 for schedule in schedules:
                     for week in range(obj.total_weeks):
                         # Find the date for this schedule's day_of_week in the given week
@@ -154,6 +258,10 @@ class CourseAdmin(admin.ModelAdmin):
                         if days_ahead < 0:
                             days_ahead += 7
                         session_date = week_start + datetime.timedelta(days=days_ahead)
+
+                        if session_date in holiday_dates:
+                            skipped += 1
+                            continue
 
                         _, created = ClassSession.objects.get_or_create(
                             course=obj,
@@ -167,17 +275,38 @@ class CourseAdmin(admin.ModelAdmin):
                         if created:
                             session_count += 1
 
+                parts = []
                 if session_count:
-                    messages.success(
-                        request,
-                        f"Generated {session_count} class sessions for {obj.total_weeks} weeks.",
-                    )
+                    parts.append(f"Generated {session_count} class sessions for {obj.total_weeks} weeks.")
+                if skipped:
+                    parts.append(f"Skipped {skipped} session(s) on holidays.")
+                if parts:
+                    messages.success(request, " ".join(parts))
+
+
+@admin.register(Holiday)
+class HolidayAdmin(admin.ModelAdmin):
+    list_display = ["date", "name"]
+    ordering = ["date"]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        cancelled = ClassSession.objects.filter(date=obj.date, is_cancelled=False).update(is_cancelled=True)
+        if cancelled:
+            messages.info(request, f"Auto-cancelled {cancelled} session(s) on {obj.date} ({obj.name}).")
+
+    def delete_model(self, request, obj):
+        restored = ClassSession.objects.filter(date=obj.date, is_cancelled=True).update(is_cancelled=False)
+        super().delete_model(request, obj)
+        if restored:
+            messages.info(request, f"Restored {restored} session(s) on {obj.date}.")
 
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
-    list_display = ["student", "course"]
+    list_display = ["student", "course", "midterm_grade", "final_grade"]
     list_filter = ["course"]
+    list_editable = ["midterm_grade", "final_grade"]
     autocomplete_fields = ["student", "course"]
 
 
@@ -192,7 +321,7 @@ class ClassSessionAdmin(admin.ModelAdmin):
     list_display = ["course", "date", "week_number", "start_time", "end_time", "is_cancelled", "attendance_count"]
     list_filter = ["course", "is_cancelled", "date"]
     search_fields = ["course__code", "course__name"]
-    inlines = [AttendanceRecordInline]
+    inlines = [AttendanceRecordInline, ExcusedAbsenceInline]
     actions = ["export_attendance_csv"]
 
     @admin.action(description="Export attendance CSV for selected sessions")
@@ -221,3 +350,11 @@ class AttendanceRecordAdmin(ImportExportModelAdmin):
     list_filter = ["session__course", "session__date"]
     search_fields = ["student_id_entered"]
     readonly_fields = ["ip_address", "user_agent", "timestamp"]
+
+
+@admin.register(ExcusedAbsence)
+class ExcusedAbsenceAdmin(admin.ModelAdmin):
+    list_display = ["student", "session", "reason", "created_at"]
+    list_filter = ["session__course", "session__date"]
+    search_fields = ["student__student_id", "student__name", "reason"]
+    autocomplete_fields = ["student", "session"]

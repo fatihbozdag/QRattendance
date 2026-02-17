@@ -8,6 +8,9 @@ from .models import Enrollment, Student
 def parse_ubys_student_list(file_obj):
     """Parse a UBYS .xls attendance list and return student data.
 
+    Dynamically detects column positions by finding the header row
+    containing "Öğrenci No", since UBYS exports vary in layout.
+
     Args:
         file_obj: A file path (str) or file-like object readable by pandas.
 
@@ -16,10 +19,34 @@ def parse_ubys_student_list(file_obj):
     """
     df = pd.read_excel(file_obj)
 
+    # Find the header row and column positions
+    id_col = None
+    name_col = None
+    header_row = None
+
+    for i in range(min(15, len(df))):
+        for j in range(df.shape[1]):
+            val = df.iloc[i, j]
+            if pd.notna(val) and "Öğrenci No" in str(val):
+                id_col = j
+                header_row = i
+                break
+        if header_row is not None:
+            break
+
+    if header_row is None:
+        # Fallback: assume columns 4 and 5
+        id_col, name_col = 4, 5
+        header_row = -1
+    else:
+        # Name is in the next column after student_id in the actual data rows
+        # (header label may span merged cells, so detect from first data row)
+        name_col = id_col + 1
+
     students = []
-    for _, row in df.iterrows():
-        student_id = row.iloc[4]
-        name = row.iloc[5]
+    for i in range(header_row + 1, len(df)):
+        student_id = df.iloc[i, id_col]
+        name = df.iloc[i, name_col]
 
         if pd.isna(student_id) or pd.isna(name):
             continue
@@ -29,8 +56,8 @@ def parse_ubys_student_list(file_obj):
         )
         name = str(name).strip()
 
-        # Skip header rows
-        if student_id in ("Öğrenci No", "#") or not student_id.isdigit():
+        # Skip non-data rows
+        if not student_id.isdigit():
             continue
 
         students.append((student_id, name))

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-block;
+        font-size: 0.85rem;
+        color: #4361ee;
+        text-decoration: none;
+        margin-bottom: 1rem;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .course-header {
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+    .course-header h1 {
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
+        text-align: left;
+    }
+    .course-header .code {
+        color: #888;
+        font-size: 0.85rem;
+    }
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 0.75rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 2px solid #e0e0e0;
+        text-align: left;
+    }
+    .summary-line {
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 0.5rem;
+        text-align: left;
+    }
+    .session-list {
+        list-style: none;
+        text-align: left;
+    }
+    .session-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.85rem;
+    }
+    .session-list li:last-child { border-bottom: none; }
+    .session-date { color: #333; }
+    .session-week { color: #888; font-size: 0.8rem; }
+    .status-check { color: #2ecc71; font-weight: bold; }
+    .status-miss { color: #e74c3c; font-weight: bold; }
+    .status-excused { color: #7f8c8d; font-weight: bold; font-size: 0.75rem; }
+    .grades-table {
+        width: 100%;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+    .grades-table td {
+        padding: 0.4rem 0;
+    }
+    .grades-table .label {
+        color: #666;
+        width: 50%;
+    }
+    .grades-table .value {
+        font-weight: 600;
+    }
+    .not-graded { color: #aaa; font-style: italic; font-weight: normal; }
+    .material-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        text-align: left;
+    }
+    .material-item:last-child { border-bottom: none; }
+    .material-info { flex: 1; }
+    .material-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    .material-desc {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 0.15rem;
+    }
+    .material-link {
+        font-size: 0.8rem;
+        color: #4361ee;
+        text-decoration: none;
+        white-space: nowrap;
+        margin-left: 0.5rem;
+    }
+    .material-link:hover { text-decoration: underline; }
+    .empty-msg {
+        color: #aaa;
+        font-size: 0.85rem;
+        padding: 0.5rem 0;
+        text-align: left;
+    }
+    .threshold-alert {
+        background: #ffeaea;
+        color: #c0392b;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        text-align: left;
+    }
+</style>
+
+<a href="{% url 'portal:dashboard' %}" class="back-link">&larr; Back to dashboard</a>
+
+<div class="course-header">
+    <h1>{{ course.name }}</h1>
+    <div class="code">{{ course.code }}{% if course.lecturer %} &middot; {{ course.lecturer }}{% endif %}</div>
+</div>
+
+{% if below_threshold %}
+<div class="threshold-alert">
+    Your attendance is {{ percentage }}% — below the {{ threshold }}% minimum required.
+</div>
+{% endif %}
+
+{# --- Attendance --- #}
+<div class="section-title">Attendance</div>
+<div class="summary-line">
+    Attended {{ attended_count }} of {{ effective_total }} sessions ({{ percentage }}%){% if excused_count %} &middot; {{ excused_count }} excused{% endif %}
+</div>
+{% if sessions %}
+<ul class="session-list">
+    {% for s in sessions %}
+    <li>
+        <span>
+            <span class="session-date">{{ s.date|date:"M d, Y" }}</span>
+            <span class="session-week">W{{ s.week_number }}</span>
+        </span>
+        {% if s.excused %}
+            <span class="status-excused">Excused</span>
+        {% elif s.attended %}
+            <span class="status-check">&#10003;</span>
+        {% else %}
+            <span class="status-miss">&#10007;</span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="empty-msg">No sessions yet.</p>
+{% endif %}
+
+{# --- Grades --- #}
+<div class="section-title">Grades</div>
+<table class="grades-table">
+    <tr>
+        <td class="label">Midterm</td>
+        <td class="value">
+            {% if midterm is not None %}{{ midterm }}{% else %}<span class="not-graded">Not graded yet</span>{% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Final</td>
+        <td class="value">
+            {% if final is not None %}{{ final }}{% else %}<span class="not-graded">Not graded yet</span>{% endif %}
+        </td>
+    </tr>
+</table>
+
+{# --- Materials --- #}
+<div class="section-title">Materials</div>
+{% if materials %}
+    {% for m in materials %}
+    <div class="material-item">
+        <div class="material-info">
+            <div class="material-title">{{ m.title }}</div>
+            {% if m.description %}<div class="material-desc">{{ m.description }}</div>{% endif %}
+        </div>
+        {% if m.file %}
+            <a href="{{ m.file.url }}" class="material-link" target="_blank">Download</a>
+        {% elif m.url %}
+            <a href="{{ m.url }}" class="material-link" target="_blank" rel="noopener">Open</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+    <p class="empty-msg">No materials uploaded yet.</p>
+{% endif %}
+{% endblock %}

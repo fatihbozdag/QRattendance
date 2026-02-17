@@ -24,11 +24,18 @@
         text-align: left;
     }
     .course-card {
+        display: block;
         background: #f8f9fa;
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 0.75rem;
         text-align: left;
+        text-decoration: none;
+        color: inherit;
+        transition: box-shadow 0.2s;
+    }
+    .course-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
     .course-card .course-name {
         font-weight: 600;
@@ -61,6 +68,18 @@
         display: flex;
         justify-content: space-between;
     }
+    .threshold-warning {
+        font-size: 0.75rem;
+        color: #e74c3c;
+        font-weight: 600;
+        margin-top: 0.3rem;
+    }
+    .threshold-note {
+        font-size: 0.75rem;
+        color: #888;
+        margin-bottom: 1rem;
+        text-align: left;
+    }
     .no-courses {
         color: #888;
         padding: 2rem 0;
@@ -77,8 +96,9 @@
 </div>
 
 {% if courses %}
+    <div class="threshold-note">Minimum attendance required: {{ threshold }}%</div>
     {% for course in courses %}
-    <div class="course-card">
+    <a href="{% url 'portal:course_detail' course.id %}" class="course-card">
         <div class="course-name">{{ course.name }}</div>
         <div class="course-code">{{ course.code }}</div>
         <div class="progress-bar-bg">
@@ -89,7 +109,10 @@
             <span>{{ course.attended }} / {{ course.total }} sessions</span>
             <span>{{ course.percentage }}%</span>
         </div>
-    </div>
+        {% if course.below_threshold %}
+        <div class="threshold-warning">Below {{ threshold }}% minimum attendance</div>
+        {% endif %}
+    </a>
     {% endfor %}
 {% else %}
     <p class="no-courses">No course enrollments found.</p>

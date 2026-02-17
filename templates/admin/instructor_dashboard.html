@@ -1,0 +1,58 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block title %}Dashboard — {{ course.code }}{% endblock %}
+{% block content %}
+<h2>Dashboard: {{ course.code }} — {{ course.name }}</h2>
+
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 150px; background: #e8f4fd; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 2rem; font-weight: bold; color: #2c3e50;">{{ total_students }}</div>
+        <div style="font-size: 0.85rem; color: #666;">Students</div>
+    </div>
+    <div style="flex: 1; min-width: 150px; background: #e8f8e8; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 2rem; font-weight: bold; color: #2c3e50;">{{ total_sessions }}</div>
+        <div style="font-size: 0.85rem; color: #666;">Sessions Completed</div>
+    </div>
+    <div style="flex: 1; min-width: 150px; background: {% if avg_attendance >= 70 %}#e8f8e8{% elif avg_attendance >= 50 %}#fff8e1{% else %}#fdeaea{% endif %}; border-radius: 8px; padding: 1rem; text-align: center;">
+        <div style="font-size: 2rem; font-weight: bold; color: #2c3e50;">{{ avg_attendance }}%</div>
+        <div style="font-size: 0.85rem; color: #666;">Avg Attendance</div>
+    </div>
+</div>
+
+<h3>At-Risk Students (below 60%)</h3>
+{% if at_risk %}
+<table style="border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 2rem;">
+    <thead>
+        <tr style="background: #f8d7da;">
+            <th style="padding: 8px 12px; text-align: left; border: 1px solid #ddd;">Student ID</th>
+            <th style="padding: 8px 12px; text-align: left; border: 1px solid #ddd;">Name</th>
+            <th style="padding: 8px 12px; text-align: center; border: 1px solid #ddd;">Attended</th>
+            <th style="padding: 8px 12px; text-align: center; border: 1px solid #ddd;">Effective Total</th>
+            <th style="padding: 8px 12px; text-align: center; border: 1px solid #ddd;">Excused</th>
+            <th style="padding: 8px 12px; text-align: center; border: 1px solid #ddd;">%</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in at_risk %}
+        <tr>
+            <td style="padding: 6px 12px; border: 1px solid #ddd;">{{ s.student.student_id }}</td>
+            <td style="padding: 6px 12px; border: 1px solid #ddd;">{{ s.student.name }}</td>
+            <td style="padding: 6px 12px; text-align: center; border: 1px solid #ddd;">{{ s.attended }}</td>
+            <td style="padding: 6px 12px; text-align: center; border: 1px solid #ddd;">{{ s.effective_total }}</td>
+            <td style="padding: 6px 12px; text-align: center; border: 1px solid #ddd;">{{ s.excused }}</td>
+            <td style="padding: 6px 12px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #c0392b;">{{ s.percentage }}%</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color: #27ae60; margin-bottom: 2rem;">No at-risk students. All students are above 60% attendance.</p>
+{% endif %}
+
+<h3>Quick Actions</h3>
+<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <a href="{% url 'attendance_matrix' course.pk %}" class="button">View Attendance Matrix</a>
+    <a href="{% url 'import_grades' course.pk %}" class="button">Import Grades</a>
+    <a href="{% url 'course_qr_code' course.pk %}" class="button">View QR Code</a>
+</div>
+{% endblock %}

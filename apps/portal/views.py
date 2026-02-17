@@ -2,7 +2,9 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.attendance.models import ClassSession, Enrollment, Student
+from apps.attendance.models import ClassSession, CourseMaterial, Enrollment, ExcusedAbsence, Student
+
+ATTENDANCE_THRESHOLD = 60  # minimum attendance percentage
 
 from .decorators import portal_login_required
 from .services import (
@@ -102,16 +104,94 @@ def dashboard(request):
             is_cancelled=False,
             records__student=student,
         ).distinct().count()
-        percentage = round(attended / total_sessions * 100) if total_sessions > 0 else 0
+        excused_count = ExcusedAbsence.objects.filter(
+            student=student, session__course=course, session__is_cancelled=False
+        ).count()
+        effective_total = total_sessions - excused_count
+        percentage = round(attended / effective_total * 100) if effective_total > 0 else 0
         courses.append({
+            "id": course.pk,
             "name": course.name,
             "code": course.code,
             "attended": attended,
             "total": total_sessions,
+            "excused": excused_count,
+            "effective_total": effective_total,
             "percentage": percentage,
+            "below_threshold": percentage < ATTENDANCE_THRESHOLD,
         })
 
-    return render(request, "portal/dashboard.html", {"student": student, "courses": courses})
+    return render(request, "portal/dashboard.html", {
+        "student": student,
+        "courses": courses,
+        "threshold": ATTENDANCE_THRESHOLD,
+    })
+
+
+@require_GET
+@portal_login_required
+def course_detail(request, course_id):
+    student_id = get_logged_in_student_id(request)
+    student = get_object_or_404(Student, student_id=student_id)
+    enrollment = get_object_or_404(Enrollment, student=student, course_id=course_id)
+    course = enrollment.course
+
+    # Attendance detail
+    sessions = ClassSession.objects.filter(
+        course=course, is_cancelled=False
+    ).order_by("date", "start_time")
+
+    attended_session_ids = set(
+        ClassSession.objects.filter(
+            course=course,
+            is_cancelled=False,
+            records__student=student,
+        ).values_list("id", flat=True)
+    )
+
+    excused_session_ids = set(
+        ExcusedAbsence.objects.filter(
+            student=student, session__course=course, session__is_cancelled=False
+        ).values_list("session_id", flat=True)
+    )
+
+    session_list = []
+    for s in sessions:
+        session_list.append({
+            "date": s.date,
+            "week_number": s.week_number,
+            "attended": s.id in attended_session_ids,
+            "excused": s.id in excused_session_ids,
+        })
+
+    total = len(session_list)
+    attended_count = len(attended_session_ids)
+    excused_count = len(excused_session_ids)
+    effective_total = total - excused_count
+    percentage = round(attended_count / effective_total * 100) if effective_total > 0 else 0
+
+    # Materials
+    materials = CourseMaterial.objects.filter(course=course)
+
+    # Grades
+    midterm = enrollment.midterm_grade
+    final = enrollment.final_grade
+
+    return render(request, "portal/course_detail.html", {
+        "student": student,
+        "course": course,
+        "sessions": session_list,
+        "attended_count": attended_count,
+        "total_sessions": total,
+        "excused_count": excused_count,
+        "effective_total": effective_total,
+        "percentage": percentage,
+        "below_threshold": percentage < ATTENDANCE_THRESHOLD,
+        "threshold": ATTENDANCE_THRESHOLD,
+        "materials": materials,
+        "midterm": midterm,
+        "final": final,
+    })
 
 
 @require_GET
