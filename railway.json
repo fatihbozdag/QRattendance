@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "gunicorn qr_attendance.wsgi:application --bind 0.0.0.0:$PORT",
+    "startCommand": "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn qr_attendance.wsgi:application --bind 0.0.0.0:$PORT",
     "restartPolicyType": "ON_FAILURE"
   }
 }
