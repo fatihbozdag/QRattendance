@@ -1,20 +1,33 @@
-{% extends "base.html" %}
+{% extends "student_base.html" %}
 {% block title %}Attendance Recorded{% endblock %}
 
 {% block content %}
-<div class="status-icon success">&#10003;</div>
-<h1>Attendance Recorded</h1>
-<p class="subtitle">
-    {{ course.code }} — {{ course.name }}
-</p>
-<p>
-    <strong>{{ student_id }}</strong>
-    {% if student_name %} — {{ student_name }}{% endif %}
-</p>
-<div class="schedule-info">
-    You're all set. You can close this page.
+<div class="text-center">
+    <!-- Green checkmark SVG -->
+    <div class="animate-slide-up mb-4">
+        <svg class="w-16 h-16 mx-auto text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+    </div>
+
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Attendance Recorded</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        {{ course.code }} — {{ course.name }}
+    </p>
+
+    <p class="text-base font-semibold text-gray-800 dark:text-gray-200">
+        {{ student_id }}{% if student_name %} — {{ student_name }}{% endif %}
+    </p>
+
+    <div class="mt-5 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-sm text-emerald-700 dark:text-emerald-400">
+        You're all set. You can close this page.
+    </div>
+
+    <p class="mt-5">
+        <a href="{% url 'portal:request_link' %}"
+           class="text-sm text-brand-600 dark:text-brand-400 hover:underline">
+            View your attendance dashboard &rarr;
+        </a>
+    </p>
 </div>
-<p style="margin-top: 1.5rem; font-size: 0.9rem;">
-    <a href="{% url 'portal:request_link' %}" style="color: #4361ee; text-decoration: none;">View your attendance dashboard &rarr;</a>
-</p>
 {% endblock %}

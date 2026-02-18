@@ -1,21 +1,29 @@
-{% extends "base.html" %}
-
+{% extends "student_base.html" %}
 {% block title %}Register Email{% endblock %}
 
 {% block content %}
-<h1>Register Email</h1>
-<p class="subtitle">Student {{ student_id }} — enter your email to receive login links</p>
+<div class="text-center mb-6">
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white">Register Email</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Student {{ student_id }} — enter your email to receive login links</p>
+</div>
 
 {% if error %}
-<div class="alert alert-error">{{ error }}</div>
+<div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+    {{ error }}
+</div>
 {% endif %}
 
 <form method="post" action="{% url 'portal:register_submit' %}">
     {% csrf_token %}
-    <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" name="email" placeholder="your.email@university.edu" required autofocus>
+    <div class="mb-5">
+        <label for="email" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="your.email@university.edu.tr" required autofocus
+               class="w-full px-4 py-3 text-center border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+        <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Use your .edu.tr email for best results</p>
     </div>
-    <button type="submit" class="btn btn-primary">Save &amp; Send Login Link</button>
+    <button type="submit"
+            class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-sm hover:shadow hover:scale-[1.02] transition-all duration-200">
+        Save &amp; Send Login Link
+    </button>
 </form>
 {% endblock %}

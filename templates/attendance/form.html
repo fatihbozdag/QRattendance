@@ -1,27 +1,50 @@
-{% extends "base.html" %}
+{% extends "student_base.html" %}
 {% block title %}{{ course.code }} — Attendance{% endblock %}
 
 {% block content %}
-<h1>{{ course.code }}</h1>
-<p class="subtitle">{{ course.name }}</p>
+<div class="text-center mb-6">
+    <span class="inline-block px-3 py-1 bg-brand-50 dark:bg-brand-700/20 text-brand-700 dark:text-brand-400 text-xs font-semibold rounded-full mb-3">
+        {{ course.code }}
+    </span>
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ course.name }}</h1>
+</div>
 
 {% if error %}
-<div class="alert alert-error">{{ error }}</div>
+<div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+    {{ error }}
+</div>
 {% endif %}
 
-<form method="post" action="{% url 'attendance:submit_attendance' course.qr_token %}">
+<form method="post" action="{% url 'attendance:submit_attendance' course.qr_token %}" id="attendance-form">
     {% csrf_token %}
-    <div class="form-group">
-        <label for="student_id">Student ID</label>
+    <div class="mb-5">
+        <label for="student_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Student ID</label>
         <input type="text" id="student_id" name="student_id"
                placeholder="Enter your student ID"
                autocomplete="off" autofocus required
-               inputmode="numeric" pattern="[0-9]*">
+               inputmode="numeric" pattern="[0-9]*"
+               class="w-full px-4 py-3 text-center text-lg tracking-wider border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
     </div>
-    <button type="submit" class="btn btn-primary">Submit Attendance</button>
+    <button type="submit" id="submit-btn"
+            class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center gap-2">
+        <span id="btn-text">Submit Attendance</span>
+        <svg id="btn-spinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+    </button>
 </form>
 
-<div class="schedule-info">
+<div class="mt-5 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center text-sm text-gray-500 dark:text-gray-400">
     Week {{ session.week_number }} — {{ session.date }}
 </div>
+
+<script>
+document.getElementById('attendance-form').addEventListener('submit', function() {
+    document.getElementById('btn-text').textContent = 'Submitting...';
+    document.getElementById('btn-spinner').classList.remove('hidden');
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-btn').classList.add('opacity-75');
+});
+</script>
 {% endblock %}

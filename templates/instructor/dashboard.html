@@ -1,0 +1,85 @@
+{% extends "instructor_base.html" %}
+{% block title %}Dashboard — {{ course.code }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ course.code }} — {{ course.name }}</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.semester }}{% if course.lecturer %} &middot; {{ course.lecturer }}{% endif %}</p>
+</div>
+
+<!-- Stat cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-5 text-center">
+        <div class="text-3xl font-bold text-gray-800 dark:text-white">{{ total_students }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Students</div>
+    </div>
+    <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-5 text-center">
+        <div class="text-3xl font-bold text-gray-800 dark:text-white">{{ total_sessions }}</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sessions Completed</div>
+    </div>
+    <div class="rounded-xl p-5 text-center {% if avg_attendance >= 70 %}bg-emerald-50 dark:bg-emerald-900/20{% elif avg_attendance >= 50 %}bg-yellow-50 dark:bg-yellow-900/20{% else %}bg-red-50 dark:bg-red-900/20{% endif %}">
+        <div class="text-3xl font-bold text-gray-800 dark:text-white">{{ avg_attendance }}%</div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Avg Attendance</div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<div class="flex flex-wrap gap-3 mb-8">
+    <a href="{% url 'instructor:attendance_matrix' course.pk %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        Attendance Matrix
+    </a>
+    <a href="{% url 'instructor:qr_code' course.pk %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+        QR Code
+    </a>
+    <a href="{% url 'instructor:import_grades' course.pk %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        Import Grades
+    </a>
+</div>
+
+<!-- At-risk students -->
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-white">At-Risk Students <span class="text-gray-400 font-normal">(below 60%)</span></h2>
+    </div>
+
+    {% if at_risk %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-red-50 dark:bg-red-900/10">
+                    <th class="px-5 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Student ID</th>
+                    <th class="px-5 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Name</th>
+                    <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-400">Attended</th>
+                    <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-400">Effective</th>
+                    <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-400">Excused</th>
+                    <th class="px-5 py-3 text-center font-medium text-gray-600 dark:text-gray-400">%</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for s in at_risk %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-5 py-3 text-gray-900 dark:text-white font-mono text-xs">{{ s.student.student_id }}</td>
+                    <td class="px-5 py-3 text-gray-700 dark:text-gray-300">{{ s.student.name }}</td>
+                    <td class="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{{ s.attended }}</td>
+                    <td class="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{{ s.effective_total }}</td>
+                    <td class="px-5 py-3 text-center text-gray-600 dark:text-gray-400">{{ s.excused }}</td>
+                    <td class="px-5 py-3 text-center font-bold text-red-600 dark:text-red-400">{{ s.percentage }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-8 text-center text-emerald-600 dark:text-emerald-400">
+        <svg class="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p>No at-risk students. All students are above 60% attendance.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

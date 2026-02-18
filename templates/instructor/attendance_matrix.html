@@ -1,0 +1,53 @@
+{% extends "instructor_base.html" %}
+{% block title %}Attendance — {{ course.code }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Attendance Matrix</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.code }} — {{ course.name }}</p>
+    </div>
+    <a href="?export=csv"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export CSV
+    </a>
+</div>
+
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-gray-700/50">
+                    <th class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 min-w-[100px]">Student ID</th>
+                    <th class="sticky left-[100px] z-10 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 min-w-[150px]">Name</th>
+                    {% for session in sessions %}
+                    <th class="px-2 py-3 text-center font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 min-w-[45px]">
+                        <div class="text-xs leading-tight">W{{ session.week_number }}</div>
+                        <div class="text-[10px] text-gray-400 dark:text-gray-500">{{ session.date|date:"m/d" }}</div>
+                    </th>
+                    {% endfor %}
+                    <th class="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 min-w-[50px]">Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for row in rows %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-2.5 font-mono text-xs text-gray-900 dark:text-white">{{ row.student.student_id }}</td>
+                    <td class="sticky left-[100px] z-10 bg-white dark:bg-gray-800 px-4 py-2.5 text-gray-700 dark:text-gray-300 text-xs">{{ row.student.name }}</td>
+                    {% for status in row.attendance %}
+                    <td class="px-1 py-2.5 text-center text-xs font-medium
+                        {% if status == 'P' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400
+                        {% elif status == 'E' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400
+                        {% else %}bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400{% endif %}">
+                        {{ status }}
+                    </td>
+                    {% endfor %}
+                    <td class="px-4 py-2.5 text-center font-bold text-gray-900 dark:text-white text-xs">{{ row.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

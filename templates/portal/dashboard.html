@@ -1,120 +1,50 @@
-{% extends "base.html" %}
-
+{% extends "student_base.html" %}
 {% block title %}My Attendance{% endblock %}
 
-{% block content %}
-<style>
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-    .dashboard-header h1 { margin-bottom: 0; }
-    .logout-link {
-        font-size: 0.85rem;
-        color: #666;
-        text-decoration: none;
-    }
-    .logout-link:hover { color: #e74c3c; }
-    .student-info {
-        color: #666;
-        font-size: 0.85rem;
-        margin-bottom: 1.5rem;
-        text-align: left;
-    }
-    .course-card {
-        display: block;
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        text-align: left;
-        text-decoration: none;
-        color: inherit;
-        transition: box-shadow 0.2s;
-    }
-    .course-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    }
-    .course-card .course-name {
-        font-weight: 600;
-        font-size: 0.95rem;
-        margin-bottom: 0.2rem;
-    }
-    .course-card .course-code {
-        color: #888;
-        font-size: 0.8rem;
-        margin-bottom: 0.6rem;
-    }
-    .progress-bar-bg {
-        background: #e0e0e0;
-        border-radius: 6px;
-        height: 10px;
-        overflow: hidden;
-        margin-bottom: 0.3rem;
-    }
-    .progress-bar-fill {
-        height: 100%;
-        border-radius: 6px;
-        transition: width 0.3s;
-    }
-    .progress-bar-fill.green { background: #2ecc71; }
-    .progress-bar-fill.yellow { background: #f1c40f; }
-    .progress-bar-fill.red { background: #e74c3c; }
-    .attendance-stats {
-        font-size: 0.8rem;
-        color: #666;
-        display: flex;
-        justify-content: space-between;
-    }
-    .threshold-warning {
-        font-size: 0.75rem;
-        color: #e74c3c;
-        font-weight: 600;
-        margin-top: 0.3rem;
-    }
-    .threshold-note {
-        font-size: 0.75rem;
-        color: #888;
-        margin-bottom: 1rem;
-        text-align: left;
-    }
-    .no-courses {
-        color: #888;
-        padding: 2rem 0;
-    }
-</style>
+{% block card %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 p-6 sm:p-8 max-w-lg w-full mx-auto">
+    {% block content %}
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-1">
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white">My Attendance</h1>
+        <a href="{% url 'portal:portal_logout' %}"
+           class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">Logout</a>
+    </div>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+        {{ student.name }} ({{ student.student_id }})
+    </p>
 
-<div class="dashboard-header">
-    <h1>My Attendance</h1>
-    <a href="{% url 'portal:portal_logout' %}" class="logout-link">Logout</a>
+    {% if courses %}
+    <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Minimum attendance required: {{ threshold }}%</p>
+
+    <div class="space-y-3">
+        {% for course in courses %}
+        <a href="{% url 'portal:course_detail' course.id %}"
+           class="block bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <div class="font-semibold text-sm text-gray-900 dark:text-white mb-0.5">{{ course.name }}</div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-2.5">{{ course.code }}</div>
+
+            <!-- Progress bar -->
+            <div class="h-2.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mb-1.5">
+                <div class="h-full rounded-full transition-all duration-500
+                            {% if course.percentage >= 70 %}bg-emerald-500{% elif course.percentage >= 50 %}bg-yellow-400{% else %}bg-red-500{% endif %}"
+                     style="width: {{ course.percentage }}%"></div>
+            </div>
+
+            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>{{ course.attended }} / {{ course.total }} sessions</span>
+                <span class="font-medium">{{ course.percentage }}%</span>
+            </div>
+
+            {% if course.below_threshold %}
+            <p class="mt-1.5 text-xs font-semibold text-red-600 dark:text-red-400">Below {{ threshold }}% minimum attendance</p>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-gray-400 dark:text-gray-500 py-8">No course enrollments found.</p>
+    {% endif %}
+    {% endblock %}
 </div>
-
-<div class="student-info">
-    {{ student.name }} ({{ student.student_id }})
-</div>
-
-{% if courses %}
-    <div class="threshold-note">Minimum attendance required: {{ threshold }}%</div>
-    {% for course in courses %}
-    <a href="{% url 'portal:course_detail' course.id %}" class="course-card">
-        <div class="course-name">{{ course.name }}</div>
-        <div class="course-code">{{ course.code }}</div>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill {% if course.percentage >= 70 %}green{% elif course.percentage >= 50 %}yellow{% else %}red{% endif %}"
-                 style="width: {{ course.percentage }}%"></div>
-        </div>
-        <div class="attendance-stats">
-            <span>{{ course.attended }} / {{ course.total }} sessions</span>
-            <span>{{ course.percentage }}%</span>
-        </div>
-        {% if course.below_threshold %}
-        <div class="threshold-warning">Below {{ threshold }}% minimum attendance</div>
-        {% endif %}
-    </a>
-    {% endfor %}
-{% else %}
-    <p class="no-courses">No course enrollments found.</p>
-{% endif %}
 {% endblock %}

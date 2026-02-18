@@ -1,197 +1,93 @@
-{% extends "base.html" %}
-
+{% extends "student_base.html" %}
 {% block title %}{{ course.name }}{% endblock %}
 
-{% block content %}
-<style>
-    .back-link {
-        display: inline-block;
-        font-size: 0.85rem;
-        color: #4361ee;
-        text-decoration: none;
-        margin-bottom: 1rem;
-    }
-    .back-link:hover { text-decoration: underline; }
-    .course-header {
-        text-align: left;
-        margin-bottom: 1.5rem;
-    }
-    .course-header h1 {
-        font-size: 1.2rem;
-        margin-bottom: 0.2rem;
-        text-align: left;
-    }
-    .course-header .code {
-        color: #888;
-        font-size: 0.85rem;
-    }
-    .section-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 1.5rem 0 0.75rem;
-        padding-bottom: 0.3rem;
-        border-bottom: 2px solid #e0e0e0;
-        text-align: left;
-    }
-    .summary-line {
-        font-size: 0.85rem;
-        color: #555;
-        margin-bottom: 0.5rem;
-        text-align: left;
-    }
-    .session-list {
-        list-style: none;
-        text-align: left;
-    }
-    .session-list li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.4rem 0;
-        border-bottom: 1px solid #f0f0f0;
-        font-size: 0.85rem;
-    }
-    .session-list li:last-child { border-bottom: none; }
-    .session-date { color: #333; }
-    .session-week { color: #888; font-size: 0.8rem; }
-    .status-check { color: #2ecc71; font-weight: bold; }
-    .status-miss { color: #e74c3c; font-weight: bold; }
-    .status-excused { color: #7f8c8d; font-weight: bold; font-size: 0.75rem; }
-    .grades-table {
-        width: 100%;
-        text-align: left;
-        font-size: 0.9rem;
-    }
-    .grades-table td {
-        padding: 0.4rem 0;
-    }
-    .grades-table .label {
-        color: #666;
-        width: 50%;
-    }
-    .grades-table .value {
-        font-weight: 600;
-    }
-    .not-graded { color: #aaa; font-style: italic; font-weight: normal; }
-    .material-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #f0f0f0;
-        text-align: left;
-    }
-    .material-item:last-child { border-bottom: none; }
-    .material-info { flex: 1; }
-    .material-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-    .material-desc {
-        font-size: 0.8rem;
-        color: #888;
-        margin-top: 0.15rem;
-    }
-    .material-link {
-        font-size: 0.8rem;
-        color: #4361ee;
-        text-decoration: none;
-        white-space: nowrap;
-        margin-left: 0.5rem;
-    }
-    .material-link:hover { text-decoration: underline; }
-    .empty-msg {
-        color: #aaa;
-        font-size: 0.85rem;
-        padding: 0.5rem 0;
-        text-align: left;
-    }
-    .threshold-alert {
-        background: #ffeaea;
-        color: #c0392b;
-        border: 1px solid #f5c6cb;
-        border-radius: 8px;
-        padding: 0.6rem 0.8rem;
-        font-size: 0.85rem;
-        margin-bottom: 1rem;
-        text-align: left;
-    }
-</style>
+{% block card %}
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 p-6 sm:p-8 max-w-lg w-full mx-auto">
+    {% block content %}
+    <!-- Back link -->
+    <a href="{% url 'portal:dashboard' %}" class="inline-flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400 hover:underline mb-4">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Back to dashboard
+    </a>
 
-<a href="{% url 'portal:dashboard' %}" class="back-link">&larr; Back to dashboard</a>
-
-<div class="course-header">
-    <h1>{{ course.name }}</h1>
-    <div class="code">{{ course.code }}{% if course.lecturer %} &middot; {{ course.lecturer }}{% endif %}</div>
-</div>
-
-{% if below_threshold %}
-<div class="threshold-alert">
-    Your attendance is {{ percentage }}% — below the {{ threshold }}% minimum required.
-</div>
-{% endif %}
-
-{# --- Attendance --- #}
-<div class="section-title">Attendance</div>
-<div class="summary-line">
-    Attended {{ attended_count }} of {{ effective_total }} sessions ({{ percentage }}%){% if excused_count %} &middot; {{ excused_count }} excused{% endif %}
-</div>
-{% if sessions %}
-<ul class="session-list">
-    {% for s in sessions %}
-    <li>
-        <span>
-            <span class="session-date">{{ s.date|date:"M d, Y" }}</span>
-            <span class="session-week">W{{ s.week_number }}</span>
-        </span>
-        {% if s.excused %}
-            <span class="status-excused">Excused</span>
-        {% elif s.attended %}
-            <span class="status-check">&#10003;</span>
-        {% else %}
-            <span class="status-miss">&#10007;</span>
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p class="empty-msg">No sessions yet.</p>
-{% endif %}
-
-{# --- Grades --- #}
-<div class="section-title">Grades</div>
-<table class="grades-table">
-    <tr>
-        <td class="label">Midterm</td>
-        <td class="value">
-            {% if midterm is not None %}{{ midterm }}{% else %}<span class="not-graded">Not graded yet</span>{% endif %}
-        </td>
-    </tr>
-    <tr>
-        <td class="label">Final</td>
-        <td class="value">
-            {% if final is not None %}{{ final }}{% else %}<span class="not-graded">Not graded yet</span>{% endif %}
-        </td>
-    </tr>
-</table>
-
-{# --- Materials --- #}
-<div class="section-title">Materials</div>
-{% if materials %}
-    {% for m in materials %}
-    <div class="material-item">
-        <div class="material-info">
-            <div class="material-title">{{ m.title }}</div>
-            {% if m.description %}<div class="material-desc">{{ m.description }}</div>{% endif %}
-        </div>
-        {% if m.file %}
-            <a href="{{ m.file.url }}" class="material-link" target="_blank">Download</a>
-        {% elif m.url %}
-            <a href="{{ m.url }}" class="material-link" target="_blank" rel="noopener">Open</a>
-        {% endif %}
+    <!-- Course header -->
+    <div class="mb-5">
+        <h1 class="text-lg font-bold text-gray-900 dark:text-white">{{ course.name }}</h1>
+        <p class="text-sm text-gray-400 dark:text-gray-500">{{ course.code }}{% if course.lecturer %} &middot; {{ course.lecturer }}{% endif %}</p>
     </div>
-    {% endfor %}
-{% else %}
-    <p class="empty-msg">No materials uploaded yet.</p>
-{% endif %}
+
+    {% if below_threshold %}
+    <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
+        Your attendance is {{ percentage }}% — below the {{ threshold }}% minimum required.
+    </div>
+    {% endif %}
+
+    {# --- Attendance --- #}
+    <h2 class="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-2 pb-1.5 border-b-2 border-gray-100 dark:border-gray-700">Attendance</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+        Attended {{ attended_count }} of {{ effective_total }} sessions ({{ percentage }}%){% if excused_count %} &middot; {{ excused_count }} excused{% endif %}
+    </p>
+
+    {% if sessions %}
+    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for s in sessions %}
+        <li class="flex items-center justify-between py-2.5 text-sm">
+            <span class="flex items-center gap-2">
+                <span class="text-gray-700 dark:text-gray-300">{{ s.date|date:"M d, Y" }}</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">W{{ s.week_number }}</span>
+            </span>
+            {% if s.excused %}
+                <span class="text-xs font-semibold text-gray-400 dark:text-gray-500">Excused</span>
+            {% elif s.attended %}
+                <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            {% else %}
+                <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-gray-400 dark:text-gray-500 py-2">No sessions yet.</p>
+    {% endif %}
+
+    {# --- Grades --- #}
+    <h2 class="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-2 pb-1.5 border-b-2 border-gray-100 dark:border-gray-700">Grades</h2>
+    <table class="w-full text-sm">
+        <tr>
+            <td class="py-2 text-gray-500 dark:text-gray-400 w-1/2">Midterm</td>
+            <td class="py-2 font-semibold text-gray-900 dark:text-white">
+                {% if midterm is not None %}{{ midterm }}{% else %}<span class="text-gray-300 dark:text-gray-600 italic font-normal">Not graded yet</span>{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="py-2 text-gray-500 dark:text-gray-400 w-1/2">Final</td>
+            <td class="py-2 font-semibold text-gray-900 dark:text-white">
+                {% if final is not None %}{{ final }}{% else %}<span class="text-gray-300 dark:text-gray-600 italic font-normal">Not graded yet</span>{% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {# --- Materials --- #}
+    <h2 class="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-2 pb-1.5 border-b-2 border-gray-100 dark:border-gray-700">Materials</h2>
+    {% if materials %}
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for m in materials %}
+        <div class="flex items-center justify-between py-3">
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ m.title }}</p>
+                {% if m.description %}<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{{ m.description }}</p>{% endif %}
+            </div>
+            {% if m.file %}
+                <a href="{{ m.file.url }}" class="ml-3 text-xs text-brand-600 dark:text-brand-400 hover:underline whitespace-nowrap" target="_blank">Download</a>
+            {% elif m.url %}
+                <a href="{{ m.url }}" class="ml-3 text-xs text-brand-600 dark:text-brand-400 hover:underline whitespace-nowrap" target="_blank" rel="noopener">Open</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-gray-400 dark:text-gray-500 py-2">No materials uploaded yet.</p>
+    {% endif %}
+    {% endblock %}
+</div>
 {% endblock %}

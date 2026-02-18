@@ -1,0 +1,70 @@
+{% extends "instructor_base.html" %}
+{% block title %}QR Code — {{ course.code }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        header, aside, #sidebar-overlay, nav, .no-print { display: none !important; }
+        main { margin-left: 0 !important; padding-top: 0 !important; }
+        .print-area { text-align: center; padding: 2rem 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto text-center">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ course.code }} — {{ course.name }}</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.semester }}{% if course.course_hours %} &middot; {{ course.course_hours }} hours/week{% endif %}</p>
+    </div>
+
+    <div class="print-area bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8">
+        <div id="qr-canvas" class="mb-4"></div>
+        <p class="font-mono text-xs text-gray-400 dark:text-gray-500 break-all">{{ scan_url }}</p>
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Scan this QR code during class hours to record attendance.</p>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 no-print">
+        <button onclick="window.print()"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Print
+        </button>
+        <button onclick="copyUrl()"
+                id="copy-btn"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            <span id="copy-text">Copy URL</span>
+        </button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+(function() {
+    var qr = qrcode(0, 'M');
+    qr.addData('{{ scan_url }}');
+    qr.make();
+    document.getElementById('qr-canvas').innerHTML = qr.createSvgTag({
+        scalable: true,
+        cellSize: 8,
+        margin: 4
+    });
+    var svg = document.querySelector('#qr-canvas svg');
+    if (svg) {
+        svg.style.width = '280px';
+        svg.style.height = '280px';
+        svg.classList.add('mx-auto');
+    }
+})();
+
+function copyUrl() {
+    navigator.clipboard.writeText('{{ scan_url }}').then(function() {
+        document.getElementById('copy-text').textContent = 'Copied!';
+        setTimeout(function() {
+            document.getElementById('copy-text').textContent = 'Copy URL';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

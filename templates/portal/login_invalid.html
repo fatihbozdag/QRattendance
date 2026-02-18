@@ -1,10 +1,23 @@
-{% extends "base.html" %}
-
+{% extends "student_base.html" %}
 {% block title %}Link Invalid{% endblock %}
 
 {% block content %}
-<div class="status-icon error">&#10007;</div>
-<h1>Link Invalid or Expired</h1>
-<p class="subtitle">This login link is no longer valid. Links expire after 15 minutes.</p>
-<a href="{% url 'portal:request_link' %}" class="btn btn-primary" style="margin-top: 1rem; text-decoration: none;">Request a New Link</a>
+<div class="text-center">
+    <!-- Red X SVG -->
+    <div class="animate-slide-up mb-4">
+        <svg class="w-16 h-16 mx-auto text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+    </div>
+
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Link Invalid or Expired</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        This login link is no longer valid. Links expire after 15 minutes.
+    </p>
+
+    <a href="{% url 'portal:request_link' %}"
+       class="inline-block w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-sm hover:shadow hover:scale-[1.02] transition-all duration-200 text-center">
+        Request a New Link
+    </a>
+</div>
 {% endblock %}

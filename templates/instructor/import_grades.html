@@ -1,0 +1,77 @@
+{% extends "instructor_base.html" %}
+{% block title %}Import Grades — {{ course.code }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Import Grades</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.code }} — {{ course.name }}</p>
+    </div>
+
+    {% if results %}
+    <div class="mb-6 p-4 rounded-xl border
+        {% if results.errors %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800
+        {% else %}bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800{% endif %}">
+        <p class="font-semibold text-sm
+            {% if results.errors %}text-yellow-800 dark:text-yellow-400{% else %}text-emerald-800 dark:text-emerald-400{% endif %}">
+            {{ results.updated }} enrollment(s) updated.
+        </p>
+        {% if results.skipped %}
+        <p class="text-sm mt-1 text-gray-600 dark:text-gray-400">
+            <strong>Skipped</strong> (not enrolled): {{ results.skipped|join:", " }}
+        </p>
+        {% endif %}
+        {% if results.errors %}
+        <div class="mt-2">
+            <p class="text-sm font-semibold text-red-700 dark:text-red-400">Errors:</p>
+            <ul class="mt-1 text-sm text-red-600 dark:text-red-400 list-disc list-inside">
+                {% for err in results.errors %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- CSV format example -->
+    <div class="mb-6 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">CSV Format:</p>
+        <pre class="bg-gray-900 dark:bg-gray-950 text-gray-100 rounded-lg p-3 text-xs overflow-x-auto">student_id,midterm,final
+2021001,85.5,
+2021002,72,91</pre>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Empty values are skipped (existing grades are preserved). Headers required on first line.
+        </p>
+    </div>
+
+    <!-- Upload form -->
+    <form method="post" enctype="multipart/form-data"
+          class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        {% csrf_token %}
+        <div class="mb-5">
+            <label for="csv_file" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">CSV File</label>
+            <input type="file" name="csv_file" id="csv_file" accept=".csv" required
+                   class="block w-full text-sm text-gray-500 dark:text-gray-400
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-lg file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-brand-50 file:text-brand-700
+                          dark:file:bg-brand-700/20 dark:file:text-brand-400
+                          hover:file:bg-brand-100 dark:hover:file:bg-brand-700/30
+                          file:transition-colors file:cursor-pointer">
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                Import Grades
+            </button>
+            <a href="{% url 'instructor:course_dashboard' course.pk %}"
+               class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
