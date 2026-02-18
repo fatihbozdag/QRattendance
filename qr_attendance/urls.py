@@ -17,6 +17,7 @@ urlpatterns = [
     path("admin/attendance/grades/<int:course_id>/", import_grades, name="import_grades"),
     path("admin/attendance/dashboard/<int:course_id>/", instructor_dashboard, name="instructor_dashboard"),
     path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")),
     path("instructor/", include("apps.attendance.instructor_urls")),
     path("a/", include("apps.attendance.urls")),
     path("api/", include("apps.api.urls")),
