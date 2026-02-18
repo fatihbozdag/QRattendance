@@ -17,3 +17,6 @@ venv/
 *.swp
 *.swo
 staticfiles/
+.DS_Store
+student_lists/
+datadump*.json
