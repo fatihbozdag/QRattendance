@@ -7,7 +7,7 @@ from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 
-from .models import AttendanceRecord, ClassSession, Course, Enrollment, ExcusedAbsence
+from .models import AttendanceRecord, ClassSession, Course, CourseMaterial, Enrollment, ExcusedAbsence
 
 
 def _course_context(course, view_name):
@@ -199,3 +199,45 @@ def instructor_import_grades(request, course_id):
     ctx = _course_context(course, "grades")
     ctx["results"] = results
     return render(request, "instructor/import_grades.html", ctx)
+
+
+@staff_member_required(login_url="/accounts/login/")
+def instructor_materials(request, course_id):
+    """Manage course materials: list, add, and delete."""
+    course = get_object_or_404(Course, pk=course_id)
+    error = None
+    success = None
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "add":
+            title = request.POST.get("title", "").strip()
+            description = request.POST.get("description", "").strip()
+            url = request.POST.get("url", "").strip()
+            file = request.FILES.get("file")
+
+            if not title:
+                error = "Title is required."
+            elif not url and not file:
+                error = "Please provide either a URL or a file."
+            else:
+                CourseMaterial.objects.create(
+                    course=course,
+                    title=title,
+                    description=description,
+                    url=url,
+                    file=file or "",
+                )
+                success = f'Material "{title}" added.'
+
+        elif action == "delete":
+            material_id = request.POST.get("material_id")
+            deleted = CourseMaterial.objects.filter(pk=material_id, course=course).delete()
+            if deleted[0]:
+                success = "Material deleted."
+
+    materials = course.materials.all()
+    ctx = _course_context(course, "materials")
+    ctx.update({"materials": materials, "error": error, "success": success})
+    return render(request, "instructor/materials.html", ctx)

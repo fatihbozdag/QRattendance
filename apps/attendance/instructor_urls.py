@@ -10,4 +10,5 @@ urlpatterns = [
     path("course/<int:course_id>/attendance/", instructor_views.instructor_attendance_matrix, name="attendance_matrix"),
     path("course/<int:course_id>/qr/", instructor_views.instructor_qr_code, name="qr_code"),
     path("course/<int:course_id>/grades/", instructor_views.instructor_import_grades, name="import_grades"),
+    path("course/<int:course_id>/materials/", instructor_views.instructor_materials, name="materials"),
 ]
