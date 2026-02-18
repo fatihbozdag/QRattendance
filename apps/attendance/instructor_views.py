@@ -19,8 +19,8 @@ def _course_context(course, view_name):
 def instructor_course_list(request):
     """List all courses with student counts."""
     courses = Course.objects.annotate(
-        student_count=Count("enrollments"),
-        session_count=Count("sessions", filter=Q(sessions__is_cancelled=False)),
+        student_count=Count("enrollments", distinct=True),
+        session_count=Count("sessions", filter=Q(sessions__is_cancelled=False), distinct=True),
     ).order_by("-semester", "code")
     return render(request, "instructor/course_list.html", {
         "courses": courses,
