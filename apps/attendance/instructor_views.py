@@ -222,13 +222,15 @@ def instructor_materials(request, course_id):
             elif not url and not file:
                 error = "Please provide either a URL or a file."
             else:
-                CourseMaterial.objects.create(
+                material = CourseMaterial(
                     course=course,
                     title=title,
                     description=description,
                     url=url,
-                    file=file or "",
                 )
+                if file:
+                    material.file = file
+                material.save()
                 success = f'Material "{title}" added.'
 
         elif action == "delete":
