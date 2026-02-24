@@ -37,7 +37,8 @@ def request_link_submit(request):
     try:
         student = Student.objects.get(email=email)
     except Student.DoesNotExist:
-        return render(request, "portal/request_link.html", {"error": "Bu e-posta adresiyle kayitli ogrenci bulunamadi."})
+        request.session["portal_register_email"] = email
+        return redirect("portal:register")
     except Student.MultipleObjectsReturned:
         student = Student.objects.filter(email=email).first()
 
@@ -48,37 +49,34 @@ def request_link_submit(request):
 
 @require_GET
 def register(request):
-    student_id = request.session.get("portal_register_student_id")
-    if not student_id:
+    email = request.session.get("portal_register_email")
+    if not email:
         return redirect("portal:request_link")
-    return render(request, "portal/register.html", {"student_id": student_id})
+    return render(request, "portal/register.html", {"email": email})
 
 
 @require_POST
 def register_submit(request):
-    student_id = request.session.get("portal_register_student_id")
-    if not student_id:
+    email = request.session.get("portal_register_email")
+    if not email:
         return redirect("portal:request_link")
 
-    email = request.POST.get("email", "").strip()
-    if not email:
-        return render(request, "portal/register.html", {"student_id": student_id, "error": "Lutfen e-posta adresinizi girin."})
-
-    if not validate_email_domain(email):
-        return render(request, "portal/register.html", {"student_id": student_id, "error": "Sadece .edu.tr uzantili e-posta adresleri kabul edilir."})
+    student_id = request.POST.get("student_id", "").strip()
+    if not student_id:
+        return render(request, "portal/register.html", {"email": email, "error": "Lutfen ogrenci numaranizi girin."})
 
     try:
         student = Student.objects.get(student_id=student_id)
     except Student.DoesNotExist:
-        return redirect("portal:request_link")
+        return render(request, "portal/register.html", {"email": email, "error": "Ogrenci numarasi bulunamadi."})
 
     student.email = email
     student.save(update_fields=["email"])
-    request.session.pop("portal_register_student_id", None)
+    request.session.pop("portal_register_email", None)
 
     if send_magic_link(request, student):
         return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
-    return render(request, "portal/register.html", {"student_id": student_id, "error": "E-posta gonderilemedi. Lutfen daha sonra tekrar deneyin."})
+    return render(request, "portal/register.html", {"email": email, "error": "E-posta gonderilemedi. Lutfen daha sonra tekrar deneyin."})
 
 
 @require_GET
