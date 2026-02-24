@@ -34,13 +34,19 @@ def request_link_submit(request):
     if not validate_email_domain(email):
         return render(request, "portal/request_link.html", {"error": "Sadece .edu.tr uzantili e-posta adresleri kabul edilir."})
 
-    try:
-        student = Student.objects.get(email=email)
-    except Student.DoesNotExist:
-        request.session["portal_register_email"] = email
-        return redirect("portal:register")
-    except Student.MultipleObjectsReturned:
-        student = Student.objects.filter(email=email).first()
+    # Try finding student by email first
+    student = Student.objects.filter(email=email).first()
+
+    # If not found, extract student_id from email local part (e.g. 2021123456@ogr.oku.edu.tr)
+    if not student:
+        local_part = email.rsplit("@", 1)[0]
+        try:
+            student = Student.objects.get(student_id=local_part)
+        except Student.DoesNotExist:
+            return render(request, "portal/request_link.html", {"error": "Bu e-posta adresiyle eslesen ogrenci bulunamadi."})
+        # Save the email for future logins
+        student.email = email
+        student.save(update_fields=["email"])
 
     if send_magic_link(request, student):
         return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
