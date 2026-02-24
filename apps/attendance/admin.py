@@ -3,6 +3,7 @@ import datetime
 
 from django import forms
 from django.contrib import admin, messages
+from django.db.models import Count
 from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.html import format_html
@@ -127,7 +128,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ["semester"]
     readonly_fields = ["qr_token", "slug"]
     inlines = [ScheduleInline, EnrollmentInline, CourseMaterialInline]
-    actions = ["export_attendance_matrix"]
+    actions = ["export_attendance_matrix", "regenerate_sessions"]
 
     fieldsets = (
         ("Course Info", {
@@ -224,6 +225,58 @@ class CourseAdmin(admin.ModelAdmin):
             writer.writerow(row)
 
         return response
+
+    @admin.action(description="Regenerate sessions (deletes empty sessions, creates from current schedule)")
+    def regenerate_sessions(self, request, queryset):
+        for course in queryset:
+            if not course.semester_start_date:
+                messages.warning(request, f"{course.code}: no semester start date set, skipping.")
+                continue
+
+            schedules = course.schedules.all()
+            if not schedules.exists():
+                messages.warning(request, f"{course.code}: no schedules defined, skipping.")
+                continue
+
+            # Delete sessions with zero attendance records
+            empty_sessions = ClassSession.objects.filter(course=course).annotate(
+                record_count=Count("records")
+            ).filter(record_count=0)
+            deleted_count = empty_sessions.count()
+            empty_sessions.delete()
+
+            # Regenerate from current schedules
+            holiday_dates = set(Holiday.objects.values_list("date", flat=True))
+            created_count = 0
+            skipped = 0
+            for schedule in schedules:
+                for week in range(course.total_weeks):
+                    week_start = course.semester_start_date + datetime.timedelta(weeks=week)
+                    days_ahead = schedule.day_of_week - week_start.weekday()
+                    if days_ahead < 0:
+                        days_ahead += 7
+                    session_date = week_start + datetime.timedelta(days=days_ahead)
+
+                    if session_date in holiday_dates:
+                        skipped += 1
+                        continue
+
+                    _, created = ClassSession.objects.get_or_create(
+                        course=course,
+                        date=session_date,
+                        start_time=schedule.start_time,
+                        defaults={
+                            "end_time": schedule.end_time,
+                            "week_number": week + 1,
+                        },
+                    )
+                    if created:
+                        created_count += 1
+
+            parts = [f"{course.code}: deleted {deleted_count} empty sessions, created {created_count} new sessions."]
+            if skipped:
+                parts.append(f"Skipped {skipped} holiday(s).")
+            messages.success(request, " ".join(parts))
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
