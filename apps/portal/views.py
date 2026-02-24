@@ -1,4 +1,3 @@
-from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
@@ -11,87 +10,28 @@ from .services import (
     get_logged_in_student_id,
     login_student,
     logout_student,
-    mask_email,
-    send_magic_link,
-    validate_email_domain,
-    verify_token,
 )
 
 
 @require_GET
-def request_link(request):
+def login_page(request):
     if get_logged_in_student_id(request):
         return redirect("portal:dashboard")
     return render(request, "portal/request_link.html")
 
 
 @require_POST
-def request_link_submit(request):
-    email = request.POST.get("email", "").strip().lower()
-    if not email:
-        return render(request, "portal/request_link.html", {"error": "Lutfen e-posta adresinizi girin."})
-
-    if not validate_email_domain(email):
-        return render(request, "portal/request_link.html", {"error": "Sadece .edu.tr uzantili e-posta adresleri kabul edilir."})
-
-    # Try finding student by email first
-    student = Student.objects.filter(email=email).first()
-
-    # If not found, extract student_id from email local part (e.g. 2021123456@ogr.oku.edu.tr)
-    if not student:
-        local_part = email.rsplit("@", 1)[0]
-        try:
-            student = Student.objects.get(student_id=local_part)
-        except Student.DoesNotExist:
-            return render(request, "portal/request_link.html", {"error": "Bu e-posta adresiyle eslesen ogrenci bulunamadi."})
-        # Save the email for future logins
-        student.email = email
-        student.save(update_fields=["email"])
-
-    if send_magic_link(request, student):
-        return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
-    return render(request, "portal/request_link.html", {"error": "E-posta gonderilemedi. Lutfen daha sonra tekrar deneyin."})
-
-
-@require_GET
-def register(request):
-    email = request.session.get("portal_register_email")
-    if not email:
-        return redirect("portal:request_link")
-    return render(request, "portal/register.html", {"email": email})
-
-
-@require_POST
-def register_submit(request):
-    email = request.session.get("portal_register_email")
-    if not email:
-        return redirect("portal:request_link")
-
+def login_submit(request):
     student_id = request.POST.get("student_id", "").strip()
     if not student_id:
-        return render(request, "portal/register.html", {"email": email, "error": "Lutfen ogrenci numaranizi girin."})
+        return render(request, "portal/request_link.html", {"error": "Lutfen ogrenci numaranizi girin."})
 
     try:
         student = Student.objects.get(student_id=student_id)
     except Student.DoesNotExist:
-        return render(request, "portal/register.html", {"email": email, "error": "Ogrenci numarasi bulunamadi."})
+        return render(request, "portal/request_link.html", {"error": "Ogrenci numarasi bulunamadi."})
 
-    student.email = email
-    student.save(update_fields=["email"])
-    request.session.pop("portal_register_email", None)
-
-    if send_magic_link(request, student):
-        return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
-    return render(request, "portal/register.html", {"email": email, "error": "E-posta gonderilemedi. Lutfen daha sonra tekrar deneyin."})
-
-
-@require_GET
-def magic_login(request, token):
-    student_id = verify_token(token)
-    if not student_id:
-        return render(request, "portal/login_invalid.html")
-
-    login_student(request, student_id)
+    login_student(request, student.student_id)
     return redirect("portal:dashboard")
 
 
@@ -204,4 +144,4 @@ def course_detail(request, course_id):
 @require_GET
 def portal_logout(request):
     logout_student(request)
-    return redirect("portal:request_link")
+    return redirect("portal:login")

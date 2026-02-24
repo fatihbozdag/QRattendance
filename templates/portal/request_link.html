@@ -4,7 +4,7 @@
 {% block content %}
 <div class="text-center mb-6">
     <h1 class="text-xl font-bold text-gray-900 dark:text-white">Ogrenci Portali</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Giris baglantisi almak icin e-posta adresinizi girin</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Yoklama bilgilerinizi goruntulemek icin ogrenci numaranizi girin</p>
 </div>
 
 {% if error %}
@@ -13,17 +13,17 @@
 </div>
 {% endif %}
 
-<form method="post" action="{% url 'portal:request_link_submit' %}">
+<form method="post" action="{% url 'portal:login_submit' %}">
     {% csrf_token %}
     <div class="mb-5">
-        <label for="email" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">E-posta Adresi</label>
-        <input type="email" id="email" name="email" placeholder="ogrencino@ogr.oku.edu.tr" required autofocus
+        <label for="student_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Ogrenci Numarasi</label>
+        <input type="text" id="student_id" name="student_id" placeholder="20211140003" required autofocus
+               inputmode="numeric" pattern="[0-9]*"
                class="w-full px-4 py-3 text-center text-lg border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
-        <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Sadece .edu.tr uzantili e-posta adresleri kabul edilir</p>
     </div>
     <button type="submit"
             class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-sm hover:shadow hover:scale-[1.02] transition-all duration-200">
-        Giris Baglantisi Gonder
+        Giris Yap
     </button>
 </form>
 {% endblock %}
