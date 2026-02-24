@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "import_export",
+    "anymail",
     # Local
     "apps.core",
     "apps.attendance",

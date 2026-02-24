@@ -8,3 +8,4 @@ python-decouple>=3.8
 whitenoise>=6.6
 pandas>=2.0
 openpyxl>=3.1
+django-anymail[resend]>=12.0
