@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand
+from django.db.models import Count
 
 from apps.attendance.models import ClassSession, Course, Schedule
 
@@ -11,8 +12,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--start-date",
-            required=True,
-            help="Semester start date (YYYY-MM-DD)",
+            help="Semester start date (YYYY-MM-DD). Defaults to course.semester_start_date.",
         )
         parser.add_argument(
             "--weeks",
@@ -23,17 +23,41 @@ class Command(BaseCommand):
             "--course",
             help="Generate for a specific course code only",
         )
+        parser.add_argument(
+            "--regenerate",
+            action="store_true",
+            help="Delete sessions with no attendance records before regenerating",
+        )
 
     def handle(self, *args, **options):
-        start_date = date.fromisoformat(options["start_date"])
-
         courses = Course.objects.all()
         if options["course"]:
             courses = courses.filter(code=options["course"])
 
         total_created = 0
+        total_deleted = 0
         for course in courses:
+            start_date = (
+                date.fromisoformat(options["start_date"])
+                if options["start_date"]
+                else course.semester_start_date
+            )
+            if not start_date:
+                self.stderr.write(f"  {course.code}: no start date, skipping")
+                continue
+
             weeks = options["weeks"] or course.total_weeks
+
+            if options["regenerate"]:
+                # Only delete sessions with zero attendance records
+                empty_sessions = ClassSession.objects.filter(course=course).annotate(
+                    record_count=Count("records")
+                ).filter(record_count=0)
+                deleted_count = empty_sessions.count()
+                empty_sessions.delete()
+                total_deleted += deleted_count
+                self.stdout.write(f"  {course.code}: deleted {deleted_count} empty sessions")
+
             schedules = Schedule.objects.filter(course=course)
 
             for schedule in schedules:
@@ -58,4 +82,6 @@ class Command(BaseCommand):
 
             self.stdout.write(f"  {course.code}: processed {weeks} weeks")
 
-        self.stdout.write(self.style.SUCCESS(f"\nCreated {total_created} sessions total."))
+        self.stdout.write(self.style.SUCCESS(
+            f"\nDeleted {total_deleted} empty sessions, created {total_created} new sessions."
+        ))
