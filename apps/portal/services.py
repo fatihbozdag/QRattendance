@@ -52,7 +52,9 @@ def send_magic_link(request, student):
             recipient_list=[student.email],
         )
         return True
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Magic link email failed: %s", e)
         return False
 
 
