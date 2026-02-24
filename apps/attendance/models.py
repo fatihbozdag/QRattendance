@@ -66,6 +66,10 @@ class Enrollment(TimeStampedModel):
     class Meta:
         unique_together = ["student", "course"]
         ordering = ["course", "student"]
+        indexes = [
+            models.Index(fields=["course"]),
+            models.Index(fields=["student"]),
+        ]
 
     def __str__(self):
         return f"{self.student.student_id} → {self.course.code}"
@@ -107,6 +111,10 @@ class ClassSession(TimeStampedModel):
     class Meta:
         unique_together = ["course", "date", "start_time"]
         ordering = ["-date", "-start_time"]
+        indexes = [
+            models.Index(fields=["course", "is_cancelled"]),
+            models.Index(fields=["course", "date"]),
+        ]
 
     def __str__(self):
         return f"{self.course.code} — {self.date} W{self.week_number}"
@@ -121,7 +129,7 @@ class AttendanceRecord(TimeStampedModel):
     student = models.ForeignKey(
         Student, on_delete=models.SET_NULL, null=True, blank=True, related_name="attendance_records"
     )
-    student_id_entered = models.CharField(max_length=20)
+    student_id_entered = models.CharField(max_length=20, db_index=True)
     ip_address = models.GenericIPAddressField()
     user_agent = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -130,6 +138,7 @@ class AttendanceRecord(TimeStampedModel):
         unique_together = ["session", "student_id_entered"]
         indexes = [
             models.Index(fields=["session", "ip_address"]),
+            models.Index(fields=["student"]),
         ]
 
     def __str__(self):
@@ -144,6 +153,9 @@ class ExcusedAbsence(TimeStampedModel):
     class Meta:
         unique_together = ["student", "session"]
         ordering = ["session__date"]
+        indexes = [
+            models.Index(fields=["student", "session"]),
+        ]
 
     def __str__(self):
         return f"{self.student.student_id} — {self.session} (Excused)"
