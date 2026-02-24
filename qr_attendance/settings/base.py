@@ -96,3 +96,4 @@ QR_GRACE_AFTER_MINUTES = 15
 
 # Email
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@qr-attendance.local")
+EMAIL_TIMEOUT = 10  # seconds — fail fast instead of hanging the worker

@@ -40,8 +40,9 @@ def request_link_submit(request):
         request.session["portal_register_student_id"] = student.student_id
         return redirect("portal:register")
 
-    send_magic_link(request, student)
-    return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
+    if send_magic_link(request, student):
+        return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
+    return render(request, "portal/request_link.html", {"error": "Could not send email. Please try again later."})
 
 
 @require_GET
@@ -74,8 +75,9 @@ def register_submit(request):
     student.save(update_fields=["email"])
     request.session.pop("portal_register_student_id", None)
 
-    send_magic_link(request, student)
-    return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
+    if send_magic_link(request, student):
+        return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
+    return render(request, "portal/register.html", {"student_id": student_id, "error": "Could not send email. Please try again later."})
 
 
 @require_GET

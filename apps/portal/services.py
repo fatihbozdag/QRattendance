@@ -44,12 +44,16 @@ def verify_token(token):
 def send_magic_link(request, student):
     token = generate_token(student.student_id)
     url = request.build_absolute_uri(reverse("portal:magic_login", args=[token]))
-    send_mail(
-        subject="Your Attendance Portal Login Link",
-        message=f"Hi {student.name},\n\nClick the link below to view your attendance:\n\n{url}\n\nThis link expires in 15 minutes.",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[student.email],
-    )
+    try:
+        send_mail(
+            subject="Your Attendance Portal Login Link",
+            message=f"Hi {student.name},\n\nClick the link below to view your attendance:\n\n{url}\n\nThis link expires in 15 minutes.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[student.email],
+        )
+        return True
+    except Exception:
+        return False
 
 
 def login_student(request, student_id):
