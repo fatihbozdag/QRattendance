@@ -20,7 +20,7 @@ class Holiday(TimeStampedModel):
 class Student(TimeStampedModel):
     student_id = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, db_index=True)
 
     class Meta:
         ordering = ["student_id"]

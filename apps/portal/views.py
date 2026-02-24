@@ -27,18 +27,19 @@ def request_link(request):
 
 @require_POST
 def request_link_submit(request):
-    student_id = request.POST.get("student_id", "").strip()
-    if not student_id:
-        return render(request, "portal/request_link.html", {"error": "Lutfen ogrenci numaranizi girin."})
+    email = request.POST.get("email", "").strip().lower()
+    if not email:
+        return render(request, "portal/request_link.html", {"error": "Lutfen e-posta adresinizi girin."})
+
+    if not validate_email_domain(email):
+        return render(request, "portal/request_link.html", {"error": "Sadece .edu.tr uzantili e-posta adresleri kabul edilir."})
 
     try:
-        student = Student.objects.get(student_id=student_id)
+        student = Student.objects.get(email=email)
     except Student.DoesNotExist:
-        return render(request, "portal/request_link.html", {"error": "Ogrenci numarasi bulunamadi."})
-
-    if not student.email or not validate_email_domain(student.email):
-        request.session["portal_register_student_id"] = student.student_id
-        return redirect("portal:register")
+        return render(request, "portal/request_link.html", {"error": "Bu e-posta adresiyle kayitli ogrenci bulunamadi."})
+    except Student.MultipleObjectsReturned:
+        student = Student.objects.filter(email=email).first()
 
     if send_magic_link(request, student):
         return render(request, "portal/check_email.html", {"masked_email": mask_email(student.email)})
